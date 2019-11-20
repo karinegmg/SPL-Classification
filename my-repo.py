@@ -33,12 +33,16 @@ listaCommitsAM = getAMFileResultsManual()
 if(fileKind == 'makefile'):
     print("SOU MAKEFILE")
     listaCommits = listaCommitsMakeFile
+    arq = open('automated-results-makefile.csv','w')
 elif(fileKind == 'kconfig'):
     print("SOU KCONFIG")
     listaCommits = listaCommitsKconfig
+    arq = open('automated-results-kconfig.csv','w')
 else:
     print("SOU AM")
     listaCommits = listaCommitsAM
+    arq = open('automated-results-am.csv','w')
+
 listaCommitResults = ['Hash,author,KC-Tags,MF-Tags,AM-Tags\n']
 features = getSPLFeatures(listaCommits)
 
@@ -99,7 +103,7 @@ for commit in RepositoryMining('../soletta',only_commits=listaCommits).traverse_
     mountStr = '{},{},{},{},{}\n'.format(commit.hash, commit.author.name, kconfig_commit_tags, makefile_commit_tags, am_commit_tags)
     listaCommitResults.append(mountStr)
 
-arq = open('automated-results.csv','w')
+#arq = open('automated-results.csv','w')
 arq.writelines(listaCommitResults)
     
 
