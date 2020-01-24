@@ -3,7 +3,8 @@ from pydriller import RepositoryMining, GitRepository
 import datetime
 from splclassifier import SPLClassifier
 from manualcommits import getManualResultsKconfig, getMakeFileResultsManual, getAMFileResultsManual
-from features import getSPLFeatures
+from features import getSPLFeatures, getLinuxF
+from getCommitsLinux import getLinuxCommits
 import re
 
 dt1 = datetime.datetime(2017, 3, 8, 0, 0, 0)
@@ -30,31 +31,56 @@ fileKind = sys.argv[1]
 listaCommitsKconfig = getManualResultsKconfig()
 listaCommitsMakeFile = getMakeFileResultsManual()
 listaCommitsAM = getAMFileResultsManual()
+
+# listaCommitsKconfigGeneral = getKconfigFiles()
+# listaCommitsMakefileGeneral = getMakefileFiles()
+# listaCommitsAMGeneral = getAMFiles()
+listaCommitsLinux = getLinuxCommits()
+
 if(fileKind == 'makefile'):
     print("SOU MAKEFILE")
-    listaCommits = listaCommitsMakeFile
-    arq = open('automated-results-makefile.csv','w')
+    #listaCommitsLinux = getLinuxCommits()
+    listaCommits = listaCommitsLinux
+    #arq = open('automated-results-makefile-linux.csv','w')
+    arq = open('automated-results-makefile-linux.csv','w')
+        
 elif(fileKind == 'kconfig'):
     print("SOU KCONFIG")
-    listaCommits = listaCommitsKconfig
-    arq = open('automated-results-kconfig.csv','w')
+    #listaCommits = listaCommitsKconfig
+    #arq = open('automated-results-kconfig-linux.csv','w')
+    arq = open('automated-results-kconfig-uclibc.csv','w')
 else:
     print("SOU AM")
-    listaCommits = listaCommitsAM
-    arq = open('automated-results-am.csv','w')
+    #listaCommits = listaCommitsAM
+    arq = open('automated-results-am-linux.csv','w')
 
 listaCommitResults = ['Hash,author,KC-Tags,MF-Tags,AM-Tags\n']
-features = getSPLFeatures(listaCommits)
+#features = getSPLFeatures()
+features = getLinuxF()
 
+pathLinux = '../../journal/repositories/linux'
+pathAxtls = '../../journal/repositories/axtls'
+pathUclibc = '../../journal/repositories/uClibc'
+githubLinux = 'https://github.com/torvalds/linux.git'
 
-# for commit in RepositoryMining('../soletta',single='fa7f6e4c8099e18ec7381605e392a6c8cdf24cf2').traverse_commits():
-for commit in RepositoryMining('../soletta',only_commits=listaCommits).traverse_commits():
+#for commit in RepositoryMining(pathLinux,only_commits=listaCommits).traverse_commits():
+
+for commit in RepositoryMining(pathLinux,only_commits=listaCommits).traverse_commits():
+#for commit in RepositoryMining(pathLinux,single='42e705e91f98637a6891eaf8a5c8dcce477b6378').traverse_commits():
+#for commit in RepositoryMining(pathUclibc).traverse_commits():
     print(commit.hash)
+    listaC = listaCommitsLinux
+    
     kconfig_commit_tags = []
     makefile_commit_tags = []
     am_commit_tags = []
     commitResults = []
+    if(commit.hash in listaC):
+        print('funfouuuu')
+
     for modification in commit.modifications:
+        print('entrou nas modss')
+
         files_changing_tags = []
         if(('kconfig' in modification.filename.lower() or 'makefile' in modification.filename.lower()) and modification.change_type.value == 5):
             diff = modification.diff
@@ -103,7 +129,7 @@ for commit in RepositoryMining('../soletta',only_commits=listaCommits).traverse_
     mountStr = '{},{},{},{},{}\n'.format(commit.hash, commit.author.name, kconfig_commit_tags, makefile_commit_tags, am_commit_tags)
     listaCommitResults.append(mountStr)
 
-#arq = open('automated-results.csv','w')
+#arqOut = open('output-linux.csv','w')
 arq.writelines(listaCommitResults)
     
 
