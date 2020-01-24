@@ -1,6 +1,9 @@
 import re
+from features import getLinuxF
 
 class SPLClassifier:
+
+    
     
     def __init__(self,added=[],removed=[],source_code=None):
         self.added = added
@@ -224,12 +227,13 @@ class SPLClassifier:
             return result
 
     def classifyMakefile(self, item, check, features):
+        featuresL = getLinuxF()
         if(type(item) != list):
             item = (item[0], item[1].strip())
             if(check == "Removed"):
                 res1 = re.search(r'^\S*\$\((.*)\)\S* := \S*', item[1])
                 res2 = re.search(r'^\S*\$\((.*)\)\S* \+= \S*', item[1])
-                if((res1 != None and res1.group(1) in features) or (res2 != None and res2.group(1) in features)):
+                if((res1 != None and res1.group(1) in featuresL) or (res2 != None and res2.group(1) in featuresL)):
                     return ("Remove","Mapping")
                 elif(re.match(r'^ifeq \S*', item[1]) != None or re.match(r'^ifneq \S*', item[1]) != None or re.match(r'^ifdef \S*', item[1]) != None):
                     return ("Remove","ifdef")
@@ -238,7 +242,7 @@ class SPLClassifier:
             elif(check == "Added"):
                 res1 = re.search(r'^\S*\$\((.*)\)\S* := \S*', item[1])
                 res2 = re.search(r'^\S*\$\((.*)\)\S* \+= \S*', item[1])
-                if((res1 != None and res1.group(1) in features) or (res2 != None and res2.group(1) in features)):
+                if((res1 != None and res1.group(1) in featuresL) or (res2 != None and res2.group(1) in featuresL)):
                     return ("Added","Mapping")
                 elif(re.match(r'^ifeq \S*', item[1]) != None or re.match(r'^ifneq \S*', item[1]) != None or re.match(r'^ifdef \S*', item[1]) != None):
                     return ("Added","ifdef")
@@ -248,7 +252,7 @@ class SPLClassifier:
             else:
                 res1 = re.search(r'^\S*\$\((.*)\)\S* := \S*', item[1])
                 res2 = re.search(r'^\S*\$\((.*)\)\S* \+= \S*', item[1])
-                if((res1 != None and res1.group(1) in features) or (res2 != None and res2.group(1) in features)):
+                if((res1 != None and res1.group(1) in featuresL) or (res2 != None and res2.group(1) in featuresL)):
                     return ("Modify","Mapping")
                 elif(re.match(r'^ifeq \S*', item[1]) != None or re.match(r'^ifneq \S*', item[1]) != None or re.match(r'^ifdef \S*', item[1]) != None):
                     return ("Modify","ifdef")
@@ -262,7 +266,7 @@ class SPLClassifier:
                     line = (line[0], line[1].strip())
                     res1 = re.search(r'^\S*\$\((.*)\)\S* := \S*', line[1])
                     res2 = re.search(r'^\S*\$\((.*)\)\S* \+= \S*', line[1])
-                    if((res1 != None and res1.group(1) in features) or (res2 != None and res2.group(1) in features)):
+                    if((res1 != None and res1.group(1) in featuresL) or (res2 != None and res2.group(1) in featuresL)):
                         partial = ("Added","Mapping")
                         if(partial not in result):
                             result.append(partial)
@@ -280,7 +284,7 @@ class SPLClassifier:
                     line = (line[0], line[1].strip())
                     res1 = re.search(r'^\S*\$\((.*)\)\S* := \S*', line[1])
                     res2 = re.search(r'^\S*\$\((.*)\)\S* \+= \S*', line[1])
-                    if((res1 != None and res1.group(1) in features) or (res2 != None and res2.group(1) in features)):
+                    if((res1 != None and res1.group(1) in featuresL) or (res2 != None and res2.group(1) in featuresL)):
                         partial = ("Remove","Mapping")
                         if(partial not in result):
                             result.append(partial)

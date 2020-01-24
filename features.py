@@ -13,7 +13,7 @@ pathUclibc = '../../journal/repositories/uClibc'
 def getSPLFeatures():
     features = []
     
-    for commit in RepositoryMining(pathLinux,only_commits=listaCommits, only_modifications_with_file_types=['kconfig']).traverse_commits():
+    for commit in RepositoryMining(pathLinux, only_modifications_with_file_types=['kconfig']).traverse_commits():
     #for commit in RepositoryMining(listaCommits, only_modifications_with_file_types=['kconfig']).traverse_commits():
         for modification in commit.modifications:
             if('kconfig' in modification.filename.lower() and modification.change_type.value == 5):
@@ -28,10 +28,13 @@ def getSPLFeatures():
 def getLinuxF():
     featuresL = []
     featLinux = open('featuresLinux.csv', 'r')
+    testeString = ''
 
     for f in featLinux:
-        print(f)
-        featuresL.append(f)
+        #print(f.strip())
+        testeString = '{}{}'.format('CONFIG_',f.strip())
+        print(testeString)
+        featuresL.append(testeString)
     
     return featuresL
 

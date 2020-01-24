@@ -36,13 +36,14 @@ listaCommitsAM = getAMFileResultsManual()
 # listaCommitsMakefileGeneral = getMakefileFiles()
 # listaCommitsAMGeneral = getAMFiles()
 listaCommitsLinux = getLinuxCommits()
-
+features = []
 if(fileKind == 'makefile'):
     print("SOU MAKEFILE")
     #listaCommitsLinux = getLinuxCommits()
     listaCommits = listaCommitsLinux
+    features = getLinuxF()
     #arq = open('automated-results-makefile-linux.csv','w')
-    arq = open('automated-results-makefile-linux.csv','w')
+    arq = open('automated-rc-linux.csv','w')
         
 elif(fileKind == 'kconfig'):
     print("SOU KCONFIG")
@@ -68,21 +69,22 @@ githubLinux = 'https://github.com/torvalds/linux.git'
 for commit in RepositoryMining(pathLinux,only_commits=listaCommits).traverse_commits():
 #for commit in RepositoryMining(pathLinux,single='42e705e91f98637a6891eaf8a5c8dcce477b6378').traverse_commits():
 #for commit in RepositoryMining(pathUclibc).traverse_commits():
-    print(commit.hash)
-    listaC = listaCommitsLinux
+    #print(commit.hash)
+    #listaC = listaCommitsLinux
     
     kconfig_commit_tags = []
     makefile_commit_tags = []
     am_commit_tags = []
     commitResults = []
-    if(commit.hash in listaC):
-        print('funfouuuu')
+    # if(commit.hash in listaC):
+    #     print('funfouuuu')
 
     for modification in commit.modifications:
-        print('entrou nas modss')
+        #print('entrou nas modss')
 
         files_changing_tags = []
         if(('kconfig' in modification.filename.lower() or 'makefile' in modification.filename.lower()) and modification.change_type.value == 5):
+            print('sou kconfig')
             diff = modification.diff
             parsed_lines = GR.parse_diff(diff)
             added = parsed_lines['added']
@@ -92,7 +94,7 @@ for commit in RepositoryMining(pathLinux,only_commits=listaCommits).traverse_com
             files_changing_tags = classifier.classify(modification.filename.lower(),features)
         # elif((re.match(r'\S*\.c', modification.filename.lower()) != None) or re.match(r'\S*\.h', modification.filename.lower()) != None):
         else:
-            print("SOU AM")
+            #print("SOU AM")
             if(modification.change_type.value != 1 and modification.change_type.value != 4):
                 diff = modification.diff
                 parsed_lines = GR.parse_diff(diff)
