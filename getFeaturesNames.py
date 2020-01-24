@@ -5,7 +5,7 @@ import re
 
 #listaCommits = getLinuxCommits()
 pathLinux = '../../journal/repositories/linux'
-fileLinuxFeatures = open('featuresLinux_teste2.csv', 'w')
+fileLinuxFeatures = open('output/featuresLinux.csv', 'w')
 
 
 featuresLinux = []
