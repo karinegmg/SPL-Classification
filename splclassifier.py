@@ -1,9 +1,6 @@
 import re
-from features import getLinuxF
 
 class SPLClassifier:
-
-    
     
     def __init__(self,added=[],removed=[],source_code=None):
         self.added = added
@@ -19,26 +16,21 @@ class SPLClassifier:
     def classify(self, file_type, features):
         removed = self.removed
         added = self.added
-        # print(removed, added)
         result = []
 
         #Classificação caso só haja remoções no arquivo
         if(len(removed) > 0 and len(added) == 0):
-            if('kconfig' in file_type):
+            if(file_type == 'kconfig'):
                 return self.kconfigClass(removed,'Removed')
-            elif('makefile' in file_type):
-                return self.classifyMakefile(removed,'Removed',features)
             else:
-                return self.classifyAM(removed, 'Removed')
+                return self.classifyMakefile(removed,'Removed',features)
 
         #Classificação caso só haja adições no arquivo
         elif(len(added) > 0 and len(removed) == 0):
-            if('kconfig' in file_type):
+            if(file_type == 'kconfig'):
                 return self.kconfigClass(added,'Added')
-            elif('makefile' in file_type):
-                return self.classifyMakefile(added,'Added',features)
             else:
-                return self.classifyAM(removed, 'Added')
+                return self.classifyMakefile(added,'Added',features)
 
         #Clasificação caso haja possíveis modificações
         else:
@@ -47,7 +39,11 @@ class SPLClassifier:
             newRemoved = []
             newModified = []
             tam,listaLonga,listaCurta = (len(added)-1,added,removed) if len(added) > len(removed) else (len(removed)-1,removed,added)
+            # print(tam)
+            # print(listaLonga)
+            # print(listaCurta)
             for i in range(tam+1):
+                # print('ITERANDO', i)
                 j = i
                 currentLongo = listaLonga[i]
                 foundModify = False
@@ -56,13 +52,16 @@ class SPLClassifier:
                         currentCurto = listaCurta[j]
                     else:
                         currentCurto = listaCurta[j-1]
+                    # print(currentCurto[0]+correctLines, currentLongo[0])
+                    # print(currentCurto[0]+correctLines == currentLongo[0])
                     if(((currentCurto[0]+correctLines == currentLongo[0]) or (currentCurto[1] == currentLongo[1])) and currentCurto[1] != ''):
+                        # print("SOU MODIFY")
+                        # print(file_type)
+                        # print('kconfig' in file_type)
                         if('kconfig' in file_type):
-                            value = self.kconfigClass(currentCurto,'Modify', currentLongo)
-                        elif('makefile' in file_type):
-                            value = self.classifyMakefile(currentCurto,'Modify',features)
+                            value = self.kconfigClass(currentCurto,'Modify')
                         else:
-                            value = self.classifyAM(currentCurto, 'Modify')
+                            value = self.classifyMakefile(currentCurto,'Modify',features)
                         if(value not in newModified):
                             newModified.append(value)
                         foundModify = True
@@ -71,10 +70,8 @@ class SPLClassifier:
                     if(listaLonga == added):
                         if('kconfig' in file_type):
                             value = self.kconfigClass(currentLongo,'Added')
-                        elif('makefile' in file_type):
-                            value = self.classifyMakefile(currentLongo,'Added',features)
                         else:
-                            value = self.classifyAM(currentLongo, 'Added')
+                            value = self.classifyMakefile(currentLongo,'Added',features)
                         if(value not in newAdded):
                             newAdded.append(value)
                         correctLines += 1
@@ -82,10 +79,8 @@ class SPLClassifier:
                     else:
                         if('kconfig' in file_type):
                             value = self.kconfigClass(currentLongo,'Removed')
-                        elif('makefile' in file_type):
-                            value = self.classifyMakefile(currentLongo,'Removed',features)
                         else:
-                            value = self.classifyAM(currentLongo, 'Removed')
+                            value = self.classifyMakefile(currentLongo,'Removed',features)
                         if(value not in newRemoved):
                             newRemoved.append(value)
                         correctLines -= 1
@@ -96,7 +91,7 @@ class SPLClassifier:
             return result
                         
 
-    def kconfigClass(self,item, check, before=False):
+    def kconfigClass(self,item, check):
         if(type(item) != list):
             item = (item[0], item[1].strip())
             if(check == "Removed"):
@@ -142,13 +137,11 @@ class SPLClassifier:
                 elif((re.match(r'^bool \"w+\"', item[1]) != None) or (re.match(r'^option \"w+\"', item[1]) != None) or (re.match(r'^prompt \"w+\"', item[1]) != None)):
                     return ("Modify","Feature")
                 elif(re.match(r'^depends on \S+', item[1]) != None):
-                    before = before[1].replace('\t', '')
-                    if(item[1].count('&&') > before.count('&&')):
+                    if("&&" in item[1]):
                         return ("Added","Depends") # Possiveis = New, Added, Remove e Modify OBS: Added && para junção - New sem &&
-                    elif(item[1].count('&&') < before.count('&&')):
-                        return("Remove", "Depends")
                     else:
                         return ("Modify","Depends")
+                    # return ("Modify","Depends")
                 elif(re.match(r'^default \S', item[1]) != None):
                     return ("Modify","Default")
                 elif(re.match(r'^select \S+', item[1]) != None):
@@ -173,7 +166,7 @@ class SPLClassifier:
                             if(partial not in result):
                                 result.append(partial) # Possiveis = New, Added, Remove e Modify OBS: Added && para junção - New sem &&
                         else:
-                            partial = ("New","Depends")
+                            partial = ("Added","Depends")
                             if(partial not in result):
                                 result.append(partial)
                     elif(re.match(r'^default \S', line[1]) != None):
@@ -227,13 +220,12 @@ class SPLClassifier:
             return result
 
     def classifyMakefile(self, item, check, features):
-        featuresL = getLinuxF()
         if(type(item) != list):
             item = (item[0], item[1].strip())
             if(check == "Removed"):
                 res1 = re.search(r'^\S*\$\((.*)\)\S* := \S*', item[1])
                 res2 = re.search(r'^\S*\$\((.*)\)\S* \+= \S*', item[1])
-                if((res1 != None and res1.group(1) in featuresL) or (res2 != None and res2.group(1) in featuresL)):
+                if((res1 != None and res1.group(1) in features) or (res2 != None and res2.group(1) in features)):
                     return ("Remove","Mapping")
                 elif(re.match(r'^ifeq \S*', item[1]) != None or re.match(r'^ifneq \S*', item[1]) != None or re.match(r'^ifdef \S*', item[1]) != None):
                     return ("Remove","ifdef")
@@ -242,21 +234,26 @@ class SPLClassifier:
             elif(check == "Added"):
                 res1 = re.search(r'^\S*\$\((.*)\)\S* := \S*', item[1])
                 res2 = re.search(r'^\S*\$\((.*)\)\S* \+= \S*', item[1])
-                if((res1 != None and res1.group(1) in featuresL) or (res2 != None and res2.group(1) in featuresL)):
+                if((res1 != None and res1.group(1) in features) or (res2 != None and res2.group(1) in features)):
                     return ("Added","Mapping")
                 elif(re.match(r'^ifeq \S*', item[1]) != None or re.match(r'^ifneq \S*', item[1]) != None or re.match(r'^ifdef \S*', item[1]) != None):
                     return ("Added","ifdef")
                 else:
+                    print(("Added","build"))
                     return ("Added","build")
 
             else:
                 res1 = re.search(r'^\S*\$\((.*)\)\S* := \S*', item[1])
                 res2 = re.search(r'^\S*\$\((.*)\)\S* \+= \S*', item[1])
-                if((res1 != None and res1.group(1) in featuresL) or (res2 != None and res2.group(1) in featuresL)):
+                if((res1 != None and res1.group(1) in features) or (res2 != None and res2.group(1) in features)):
+                    # print(res2.group(1), res2.group(1) in features)
+                    # print(("Modify","Mapping"))
                     return ("Modify","Mapping")
                 elif(re.match(r'^ifeq \S*', item[1]) != None or re.match(r'^ifneq \S*', item[1]) != None or re.match(r'^ifdef \S*', item[1]) != None):
                     return ("Modify","ifdef")
                 else:
+                    # print('PLATFORM_LINUX_COMMON' in features)
+                    # print(("Modify","build"))
                     return ("Modify","build")
                 
         else:
@@ -266,7 +263,7 @@ class SPLClassifier:
                     line = (line[0], line[1].strip())
                     res1 = re.search(r'^\S*\$\((.*)\)\S* := \S*', line[1])
                     res2 = re.search(r'^\S*\$\((.*)\)\S* \+= \S*', line[1])
-                    if((res1 != None and res1.group(1) in featuresL) or (res2 != None and res2.group(1) in featuresL)):
+                    if((res1 != None and res1.group(1) in features) or (res2 != None and res2.group(1) in features)):
                         partial = ("Added","Mapping")
                         if(partial not in result):
                             result.append(partial)
@@ -284,7 +281,7 @@ class SPLClassifier:
                     line = (line[0], line[1].strip())
                     res1 = re.search(r'^\S*\$\((.*)\)\S* := \S*', line[1])
                     res2 = re.search(r'^\S*\$\((.*)\)\S* \+= \S*', line[1])
-                    if((res1 != None and res1.group(1) in featuresL) or (res2 != None and res2.group(1) in featuresL)):
+                    if((res1 != None and res1.group(1) in features) or (res2 != None and res2.group(1) in features)):
                         partial = ("Remove","Mapping")
                         if(partial not in result):
                             result.append(partial)
@@ -297,35 +294,3 @@ class SPLClassifier:
                         if(partial not in result):
                             result.append(partial)
             return result
-    
-    def classifyAM(self, item, check):
-        if(type(item) != list):
-            item = (item[0], item[1].strip())
-            if(check == "Removed"):
-                if(re.match(r'^#ifeq \S*', item[1]) != None or re.match(r'^#ifneq \S*', item[1]) != None or re.match(r'^#ifdef \S*', item[1]) != None):
-                    return ("Remove","ifdef")
-                    
-            elif(check == "Added"):
-                if(re.match(r'^#ifeq \S*', item[1]) != None or re.match(r'^#ifneq \S*', item[1]) != None or re.match(r'^#ifdef \S*', item[1]) != None):
-                    return ("Added","ifdef")
-
-            else:
-                if(re.match(r'^#ifeq \S*', item[1]) != None or re.match(r'^#ifneq \S*', item[1]) != None or re.match(r'^#ifdef \S*', item[1]) != None):
-                    return ("Modify","ifdef")
-                
-        else:
-            result = []
-            if(check == 'Added'):
-                for line in item:
-                    if(re.match(r'^#ifeq \S*', line[1]) != None or re.match(r'^#ifneq \S*', line[1]) != None or re.match(r'^#ifdef \S*', line[1]) != None):
-                        partial = ("Added","ifdef")
-                        if(partial not in result):
-                            result.append(partial)
-            else:
-                for line in item:
-                    if(re.match(r'^#ifeq \S*', line[1]) != None or re.match(r'^#ifneq \S*', line[1]) != None or re.match(r'^#ifdef \S*', line[1]) != None):
-                        partial = ("Remove","ifdef")
-                        if(partial not in result):
-                            result.append(partial)
-            return result
-
